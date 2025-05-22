@@ -1,0 +1,28 @@
+<odoo>
+  <record id="line_chat_view_list" model="ir.ui.view">
+    <field name="name">line.chat.list</field>
+    <field name="model">line.chat</field>
+    <field name="arch" type="xml">
+      <list string="已建立 LINE 對話的客戶">
+      <!-- <group> -->
+        <field name="name"/>
+        <field name="line_user_id"/>
+        <field name="partner_id"/>
+        <field name="channel"/>
+        <field name="agent_partner_id"/>
+      <!-- </group> -->
+      </list>
+    </field>
+  </record>
+  <record id="line_chat_action" model="ir.actions.act_window">
+      <field name="name">LINE 聯絡人</field>
+      <field name="res_model">line.chat</field>
+      <field name="view_mode">list,form</field>
+  </record>
+
+  <menuitem id="line_chat_menu_root" name="Line 大標題">
+    <!-- <menuitem id="estate_property_menu" name="選單標題"> -->
+        <menuitem id="line_chat_menu_action" action="line_chat_action"/>
+    <!-- </menuitem> -->
+  </menuitem>
+</odoo>

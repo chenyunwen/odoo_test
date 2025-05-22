@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form View -->
+    <record id="line_chat_status_view_form" model="ir.ui.view">
+        <field name="name">line.chat.status.form</field>
+        <field name="model">line.chat.status</field>
+        <field name="arch" type="xml">
+            <form string="客服狀態">
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="serving_count" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="line_chat_status_view_list" model="ir.ui.view">
+        <field name="name">line.chat.status.list</field>
+        <field name="model">line.chat.status</field>
+        <field name="arch" type="xml">
+            <list string="客服狀態">
+                <field name="partner_id"/>
+                <field name="serving_count"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="line_chat_status_action" model="ir.actions.act_window">
+        <field name="name">客服人員狀態</field>
+        <field name="res_model">line.chat.status</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p>查看目前客服人員服務中的人數。</p>
+        </field>
+    </record>
+
+    <!-- Menu -->
+    <!-- <menuitem id="line_chat_menu_root"
+              name="LINE 聊天"
+              sequence="10"
+              groups="base.group_user"/> -->
+
+    <menuitem id="line_chat_status_menu"
+              name="客服人員狀態"
+              parent="line_chat_menu_root"
+              action="line_chat_status_action"
+              sequence="20"
+              groups="base.group_user"/>
+
+</odoo>

@@ -1,0 +1,3 @@
+id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
+access_line_chat,access.line.chat,model_line_chat,base.group_user,1,1,1,1
+access_line_chat_status,access.line.chat.status,model_line_chat_status,base.group_user,1,1,1,1
