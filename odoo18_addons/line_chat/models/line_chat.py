@@ -73,13 +73,16 @@ class LineChat(models.Model):
         secret = os.environ.get('LINE_SECRET')
 
         configuration = Configuration(access_token=access_token)
-        line_bot_api = MessagingApi(ApiClient(configuration))
-        # line_bot_api = LineBotApi(access_token)
         handler = WebhookHandler(secret)
 
         self._validate_signature(handler, body, signature)
 
+        line_bot_api = MessagingApi(ApiClient(configuration))
+        # line_bot_api = LineBotApi(access_token)
+        
         try:
+            print('json_data')
+            print(json_data)
             event = json_data['events'][0]
             message_type = event['message']['type']
             reply_token = event['replyToken']
@@ -122,15 +125,20 @@ class LineChat(models.Model):
 
             elif message_type == 'image':
                 message_id = event['message']['id']
-                message_content, content_type = self.download_line_media_file_with_retry(message_id, access_token)
-                # with ApiClient(configuration) as api_client:
-                #     line_bot_blob_api = MessagingApiBlob(api_client)
-                #     message_content = line_bot_blob_api.get_message_content(message_id=message_id)                
-                self._post_odoo_image_message(curr_channel, message_content, content_type, filename, curr_partner_id)
+                message_content, content_type = self._download_line_media_file_with_retry(message_id, access_token)
+                
+                image_set = event['message'].get('imageSet')
+                if image_set:
+                    image_set_id = event['message']['imageSet']['id']
+                    index = event['message']['imageSet']['index']
+                    total = event['message']['imageSet']['total']
+                    self._post_odoo_image_message_set(curr_channel, message_content, content_type, filename, image_set_id, total == index, curr_partner_id)
+                else:
+                    self._post_odoo_image_message(curr_channel, message_content, content_type, filename, curr_partner_id)
             
             elif message_type == 'audio':
                 message_id = event['message']['id']
-                message_content, content_type = self.download_line_media_file_with_retry(message_id, access_token)
+                message_content, content_type = self._download_line_media_file_with_retry(message_id, access_token)
                 self._post_odoo_audio_message(curr_channel, message_content, content_type, filename, curr_partner_id)
                     
             else:
@@ -150,7 +158,8 @@ class LineChat(models.Model):
         except Exception as e:
             raise exceptions.ValidationError(f"LINE 簽章驗證失敗: {e}")
     
-    def download_line_media_file_with_retry(self, message_id, access_token, retries=3, delay=2):
+
+    def _download_line_media_file_with_retry(self, message_id, access_token, retries=3, delay=2):
         url = f"https://api-data.line.me/v2/bot/message/{message_id}/content"
         headers = {"Authorization": f"Bearer {access_token}"}
         
@@ -166,21 +175,6 @@ class LineChat(models.Model):
                     raise Exception(f"Failed to get message content: {response.status_code}")
             raise Exception("Exceeded max retries to get message content")
         
-    def download_line_audio_file_with_retry(self, message_id, access_token, retries=3, delay=2):        
-        url = f"https://api-data.line.me/v2/bot/message/{message_id}/content"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        
-        with httpx.Client() as client:
-            for attempt in range(retries):
-                response = client.get(url, headers=headers)
-                if response.status_code == 200:
-                    return response.content, response.headers.get('content-type', '')
-                elif response.status_code == 202:
-                    print(f"Content not ready, retry {attempt + 1}/{retries} after {delay} seconds")
-                    time.sleep(delay)
-                else:
-                    raise Exception(f"Failed to get message content: {response.status_code}")
-            raise Exception("Exceeded max retries to get message content")
     
     def _create_new_line_chat_user(self, line_name, line_user_id):
         fake_partner = self.env['res.partner'].create({'name': f"{line_name} (LINE)"})
@@ -335,6 +329,33 @@ class LineChat(models.Model):
         #     'attachment_ids': [(4, attachment.id)],
         #     'author_id': partner_id.id
         # })
+
+    def _post_odoo_image_message_set(self, channel, image_bytes, content_type, filename, image_set_id, is_lest_one, partner_id):
+        attachment = self.env['ir.attachment'].create({
+            'name': f'{filename}.jpg',
+            'datas': base64.b64encode(image_bytes).decode('utf-8'),  # Odoo 附件要 base64 字串
+            'res_model': 'discuss.channel',
+            'res_id': channel.id,  # 討論頻道ID
+            'mimetype': content_type,
+        })
+
+        existing_image_set = self.env['line.image.set'].search([('image_set_id', '=', image_set_id)], limit=1)
+        if not existing_image_set:
+            msg = channel.message_post(
+                body='(image)',
+                message_type='comment',
+                subtype_xmlid='mail.mt_comment',
+                author_id=partner_id.id
+            )
+            msg.write({'attachment_ids': [(4, attachment.id)]})
+            self.env['line.image.set'].create({
+                'image_set_id': image_set_id,
+                'message_id': msg.id
+            })
+        else:
+            existing_image_set.message_id.write({'attachment_ids': [(4, attachment.id)]})
+            if(is_lest_one):
+                existing_image_set.unlink()
 
         
     def _post_odoo_audio_message(self, channel, audio_bytes, content_type, filename, partner_id):

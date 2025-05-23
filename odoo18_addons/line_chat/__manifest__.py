@@ -8,6 +8,7 @@
       'security/ir.model.access.csv',
       'views/line_chat_views.xml',
       'views/line_chat_status_views.xml',
+      'views/line_image_set_views.xml',
     ],
     'installable': True,
     'application': True,

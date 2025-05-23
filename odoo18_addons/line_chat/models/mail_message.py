@@ -31,24 +31,31 @@ class MailMessage(models.Model):
                 # body = message.body or ''
                 if(message.attachment_ids):
                     print(message.attachment_ids)
-                    attachments = message.attachment_ids.filtered(lambda a: a.mimetype and a.mimetype.startswith('image/'))
-                    for attachment in attachments:
-                        print(f"找到圖片附件：{attachment.name}")
-                        # image_url = '/web/content/ir.attachment/%d/datas' % attachment.id
-                        # base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-                        # image_url = f"{base_url}/web/content/ir.attachment/{attachment.id}/datas"
-                        
-                        # print('image_url')
-                        # print(image_url) 
+                    # attachments = message.attachment_ids.filtered(lambda a: a.mimetype and a.mimetype.startswith('image/'))
+                    i = 0
+                    for attachment in message.attachment_ids:
+                        if(attachment.mimetype):
+                            print('iiiiiii: ',i)
+                            i = i+1
+                            if(attachment.mimetype.startswith('image/')):
+                                print(f"找到圖片附件：{attachment.name}")
+                                # image_url = '/web/content/ir.attachment/%d/datas' % attachment.id
+                                # base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+                                # image_url = f"{base_url}/web/content/ir.attachment/{attachment.id}/datas"
+                                
+                                # print('image_url')
+                                # print(image_url) 
 
-                        line_chat._send_line_image_message(line_bot_api, attachment)
-                        # line_bot_api.push_message(
-                        #     user_id,  # 收訊人的 LINE userId
-                        #     ImageSendMessage(
-                        #         original_content_url=full_url,  # 原圖 URL
-                        #         preview_image_url=full_url       # 預覽圖 URL (可用同一張)
-                        #     )
-                        # )
+                                line_chat._send_line_image_message(line_bot_api, attachment)
+                                # line_bot_api.push_message(
+                                #     user_id,  # 收訊人的 LINE userId
+                                #     ImageSendMessage(
+                                #         original_content_url=full_url,  # 原圖 URL
+                                #         preview_image_url=full_url       # 預覽圖 URL (可用同一張)
+                                #     )
+                                # )
+                            elif(attachment.mimetype.startswith('audio/')):
+                                print(f"找到音訊附件：{attachment.name}")
 
                 message_data = {
                     'subject': message.subject or '',
