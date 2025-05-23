@@ -1,10 +1,20 @@
 import base64
+import contextlib
+import io
 import os
 import json
+import wave
 
 import requests
 import httpx
 import datetime
+import tempfile
+import time
+import hmac
+import hashlib
+from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.wave import WAVE
 
 # from dotenv import load_dotenv
 
@@ -15,9 +25,7 @@ from dateutil.relativedelta import relativedelta
 from odoo.fields import Command
 from flask import Flask, request
 from bs4 import BeautifulSoup
-import time
-import hmac
-import hashlib
+
 from urllib.parse import urlencode
 
 
@@ -132,7 +140,7 @@ class LineChat(models.Model):
                         image_set_id = event['message']['imageSet']['id']
                         index = event['message']['imageSet']['index']
                         total = event['message']['imageSet']['total']
-                        self._post_odoo_image_message_set(curr_channel, message_content, content_type, filename, image_set_id, total == index, curr_partner_id)
+                        self._post_odoo_image_set_message(curr_channel, message_content, content_type, filename, image_set_id, total == index, curr_partner_id)
                     else:
                         self._post_odoo_image_message(curr_channel, message_content, content_type, filename, curr_partner_id)
                 
@@ -149,6 +157,7 @@ class LineChat(models.Model):
                     self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_id)
             else:
                 print("尚未建立聊天室。")
+
 
 
     # 
@@ -248,37 +257,40 @@ class LineChat(models.Model):
         except Exception as e:
             raise exceptions.ValidationError(f"回覆 LINE 訊息時錯誤: {e}")
     
-    def _send_line_image_message(self, line_bot_api, attachment, expire_seconds=300):
+    def _send_line_image_message(self, line_bot_api, attachments, expire_seconds=300):
         
         secret = os.environ.get('LINE_SIGN_SECRET')  # 要跟 Controller 中一樣
-        # expires = int(time.time()) + expire_seconds
-        # data = f"{attachment.id}:{expires}".encode('utf-8')
-        data = f"{attachment.id}".encode('utf-8')
-        signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
-
-        BASE_URL = os.environ.get('BASE_URL')
-        IMAGE_PATH = os.environ.get('IMAGE_PATH')
-        ext = os.path.splitext(attachment.name or '')[1] or '.jpg'
-        # params = urlencode({'signature': signature, 'expires': expires})
-        # params = urlencode({'signature': signature})
-        url = f"{BASE_URL}{IMAGE_PATH}/{attachment.id}{ext}" # ?{params}"
-        print(url)
 
         try:
-            # line_bot_api.push_message(
-            #     self.line_user_id,  
-            #     ImageSendMessage(
-            #         original_content_url=url,
-            #         preview_image_url=url,
-            #     )
-            # )
-            messages = [
-                ImageMessage(
-                    original_content_url=url,
-                    preview_image_url=url
-                )
-            ]
+            messages = []
+            for attachment in attachments:
+                # expires = int(time.time()) + expire_seconds
+                # data = f"{attachment.id}:{expires}".encode('utf-8')
+                data = f"{attachment.id}".encode('utf-8')
+                signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
 
+                BASE_URL = os.environ.get('BASE_URL')
+                IMAGE_PATH = os.environ.get('IMAGE_PATH')
+                ext = os.path.splitext(attachment.name or '')[1] or '.jpg'
+                # params = urlencode({'signature': signature, 'expires': expires})
+                # params = urlencode({'signature': signature})
+                url = f"{BASE_URL}{IMAGE_PATH}/{attachment.id}{ext}" # ?{params}"
+                print(url)
+
+                # line_bot_api.push_message(
+                #     self.line_user_id,  
+                #     ImageSendMessage(
+                #         original_content_url=url,
+                #         preview_image_url=url,
+                #     )
+                # )
+                messages.append(
+                    ImageMessage(
+                        original_content_url=url,
+                        preview_image_url=url
+                    )
+                )
+            print(messages)    
             push_request = PushMessageRequest(
                 to=self.line_user_id,
                 messages=messages
@@ -287,6 +299,88 @@ class LineChat(models.Model):
             line_bot_api.push_message(push_request)
         except Exception as e:
             raise exceptions.ValidationError(f"LINE 傳送圖片失敗：{e}")
+        
+    def get_audio_duration_ms(self, attachment):
+        try:
+            # 將 binary 轉成音訊物件
+            audio_data = base64.b64decode(attachment.datas)
+            
+            # 建立暫時檔案讀取（因 mutagen 只吃檔案路徑）
+            suffix = os.path.splitext(attachment.name or '')[1] or '.m4a'
+            tmp_path = None
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                tmp.write(audio_data)
+                tmp_path = tmp.name
+
+            if suffix in ['.mp3', '.m4a', '.mp4', '.aac']:
+                try:
+                    if suffix in ['.mp3']:
+                        audio = MP3(tmp_path)
+                    elif suffix in ['.m4a', '.mp4', '.aac']:
+                        audio = MP4(tmp_path)
+                    
+                    print('audio')
+                    print(audio)
+                    if audio and audio.info.length:
+                        duration_ms = int(audio.info.length * 1000)
+                        return duration_ms
+                except Exception as e:
+                    raise ValueError(f"無法讀取音訊：{e}")  
+                  
+            elif suffix in ['.wav']:
+                try:
+                    with contextlib.closing(wave.open(io.BytesIO(audio_data), 'rb')) as wf:
+                        frames = wf.getnframes()
+                        rate = wf.getframerate()
+                        duration = frames / float(rate)
+                        duration_ms = int(duration * 1000)
+                        return duration_ms
+                except Exception as e:
+                    raise exceptions.ValidationError(f"無法讀取wav音訊：{e}")
+            else:
+                raise exceptions.ValidationError(f"不支援的音訊格式：{suffix}")
+        except Exception as e:
+            raise exceptions.ValidationError(f"無法取得語音長度：{e}")
+
+    def _send_line_audio_message(self, line_bot_api, attachment, expire_seconds=300):
+        
+        secret = os.environ.get('LINE_SIGN_SECRET')  # 要跟 Controller 中一樣
+
+        try:
+            messages = []
+            # expires = int(time.time()) + expire_seconds
+            # data = f"{attachment.id}:{expires}".encode('utf-8')
+            data = f"{attachment.id}".encode('utf-8')
+            signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
+
+            BASE_URL = os.environ.get('BASE_URL')
+            AUDIO_PATH = os.environ.get('AUDIO_PATH')  # 假設你有 audio 路徑
+            ext = os.path.splitext(attachment.name or '')[1] or '.m4a'
+            url = f"{BASE_URL}{AUDIO_PATH}/{attachment.id}{ext}"
+
+            print(f"Audio URL: {url}")
+
+            duration_ms = self.get_audio_duration_ms(attachment)
+            # 預設語音長度，如果你無法解析 duration，可暫時寫死或後續補強
+            # duration_ms = 5000  # 假設為 5 秒，之後可從 metadata 抓
+
+            # 建立 LINE AudioMessage
+            messages.append(
+                AudioMessage(
+                    original_content_url=url,
+                    duration=duration_ms
+                )
+            )
+
+            push_request = PushMessageRequest(
+                to=self.line_user_id,
+                messages=messages
+            )
+
+            line_bot_api.push_message(push_request)
+
+        except Exception as e:
+            raise exceptions.ValidationError(f"LINE 傳送語音失敗：{e}")
 
     def _post_odoo_text_message(self, channel, text, partner_id):
         try:
@@ -330,7 +424,7 @@ class LineChat(models.Model):
         #     'author_id': partner_id.id
         # })
 
-    def _post_odoo_image_message_set(self, channel, image_bytes, content_type, filename, image_set_id, is_lest_one, partner_id):
+    def _post_odoo_image_set_message(self, channel, image_bytes, content_type, filename, image_set_id, is_lest_one, partner_id):
         attachment = self.env['ir.attachment'].create({
             'name': f'{filename}.jpg',
             'datas': base64.b64encode(image_bytes).decode('utf-8'),  # Odoo 附件要 base64 字串
@@ -359,7 +453,6 @@ class LineChat(models.Model):
             print(count)
             if(is_lest_one):
                 existing_image_set.unlink()
-
         
     def _post_odoo_audio_message(self, channel, audio_bytes, content_type, filename, partner_id):
         attachment = self.env['ir.attachment'].create({
