@@ -189,8 +189,8 @@ class LineChat(models.Model):
     
     def _create_new_line_chat_user(self, line_name, line_user_id):
         fake_partner = self.env['res.partner'].create({'name': f"{line_name} (LINE)"})
-
         least_busy_agent = self.env['line.chat.status'].search([], order='serving_count ASC', limit=1)
+
         if least_busy_agent and least_busy_agent.partner_id:
             members_to_add = [Command.link(least_busy_agent.partner_id.id)]
         else:
@@ -198,12 +198,6 @@ class LineChat(models.Model):
             members_to_add = [Command.link(least_busy_agent.partner_id.id)]
 
         least_busy_agent.serving_count += 1
-
-        # print('user id:', self.env.user.id)
-        # print('user name:', self.env.user.name)
-        # print('partner id:', members_to_add[0])
-        # print('partner name:', self.env.user.partner_id.name)
-
         members_to_add.append(Command.link(fake_partner.id))
 
         channel = self.env['discuss.channel'].create({
@@ -211,10 +205,6 @@ class LineChat(models.Model):
             'channel_type': 'chat',
             'channel_partner_ids': members_to_add
         })
-
-        print("實際聊天室成員：")
-        for p in channel.channel_partner_ids:
-            print(f"- {p.name} (ID: {p.id})")
 
         return self.env['line.chat'].create({
             'name': line_name,
@@ -236,7 +226,6 @@ class LineChat(models.Model):
                 messages=messages
             )
             line_bot_api.reply_message(reply_request)
-            # line_bot_api.reply_message(reply_token, [TextSendMessage(text), TextSendMessage("請稍等客服回應")])
 
         except Exception as e:
             raise exceptions.ValidationError(f"即時回覆 LINE 訊息時錯誤: {e}")
@@ -264,6 +253,9 @@ class LineChat(models.Model):
         secret = os.environ.get('LINE_SIGN_SECRET')  # 要跟 Controller 中一樣
 
         try:
+            BASE_URL = os.environ.get('BASE_URL')
+            IMAGE_PATH = os.environ.get('IMAGE_PATH')
+            
             messages = []
             for attachment in attachments:
                 # expires = int(time.time()) + expire_seconds
@@ -271,8 +263,7 @@ class LineChat(models.Model):
                 data = f"{attachment.id}".encode('utf-8')
                 signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
 
-                BASE_URL = os.environ.get('BASE_URL')
-                IMAGE_PATH = os.environ.get('IMAGE_PATH')
+                
                 ext = os.path.splitext(attachment.name or '')[1] or '.jpg'
                 # params = urlencode({'signature': signature, 'expires': expires})
                 # params = urlencode({'signature': signature})
@@ -344,35 +335,33 @@ class LineChat(models.Model):
         except Exception as e:
             raise exceptions.ValidationError(f"無法取得語音長度：{e}")
 
-    def _send_line_audio_message(self, line_bot_api, attachment, expire_seconds=300):
+    def _send_line_audio_message(self, line_bot_api, attachments, expire_seconds=300):
         
-        secret = os.environ.get('LINE_SIGN_SECRET')  # 要跟 Controller 中一樣
+        secret = os.environ.get('LINE_SIGN_SECRET')
 
         try:
-            messages = []
-            # expires = int(time.time()) + expire_seconds
-            # data = f"{attachment.id}:{expires}".encode('utf-8')
-            data = f"{attachment.id}".encode('utf-8')
-            signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
-
             BASE_URL = os.environ.get('BASE_URL')
-            AUDIO_PATH = os.environ.get('AUDIO_PATH')  # 假設你有 audio 路徑
-            ext = os.path.splitext(attachment.name or '')[1] or '.m4a'
-            url = f"{BASE_URL}{AUDIO_PATH}/{attachment.id}{ext}"
+            AUDIO_PATH = os.environ.get('AUDIO_PATH')
 
-            print(f"Audio URL: {url}")
+            messages = []
+            for attachment in attachments:
+                # expires = int(time.time()) + expire_seconds
+                # data = f"{attachment.id}:{expires}".encode('utf-8')
+                data = f"{attachment.id}".encode('utf-8')
+                signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
+                
+                ext = os.path.splitext(attachment.name or '')[1] or '.m4a'
+                url = f"{BASE_URL}{AUDIO_PATH}/{attachment.id}{ext}"
+                print(f"Audio URL: {url}")
 
-            duration_ms = self.get_audio_duration_ms(attachment)
-            # 預設語音長度，如果你無法解析 duration，可暫時寫死或後續補強
-            # duration_ms = 5000  # 假設為 5 秒，之後可從 metadata 抓
+                duration_ms = self.get_audio_duration_ms(attachment)
 
-            # 建立 LINE AudioMessage
-            messages.append(
-                AudioMessage(
-                    original_content_url=url,
-                    duration=duration_ms
+                messages.append(
+                    AudioMessage(
+                        original_content_url=url,
+                        duration=duration_ms
+                    )
                 )
-            )
 
             push_request = PushMessageRequest(
                 to=self.line_user_id,

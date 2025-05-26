@@ -16,14 +16,10 @@ class MailMessage(models.Model):
         print('vals_list')
         print(vals_list)
 
-        # channel_id = [vals.get('res_id') for vals in vals_list if vals.get('model') == 'discuss.channel'][0]
-        # partner_id = [vals.get('author_id') for vals in vals_list if vals.get('model') == 'discuss.channel'][0]
-        
         channel_id = next((vals.get('res_id') for vals in vals_list if vals.get('model') == 'discuss.channel'), None)
         partner_id = next((vals.get('author_id') for vals in vals_list if vals.get('model') == 'discuss.channel'), None)
         
         if(channel_id and partner_id):
-
             line_chat = self.env['line.chat'].search([('channel', '=', channel_id)], limit=1)
             partner = self.env['line.chat.status'].search([('partner_id', '=', partner_id)], limit=1)
 
@@ -31,10 +27,10 @@ class MailMessage(models.Model):
                 access_token = os.environ.get('LINE_ACCESS_TOKEN')
                 configuration = Configuration(access_token=access_token)
                 line_bot_api = MessagingApi(ApiClient(configuration))
-                # line_bot_api = LineBotApi(access_token)
+
                 image_set = []
+                audio_set = []
                 for message in messages:
-                    # body = message.body or ''
                     if(message.attachment_ids):
                         print(message.attachment_ids)
                         # attachments = message.attachment_ids.filtered(lambda a: a.mimetype and a.mimetype.startswith('image/'))
@@ -43,27 +39,12 @@ class MailMessage(models.Model):
                                 if(attachment.mimetype.startswith('image/')):
                                     print(f"找到圖片附件：{attachment.name}")
                                     image_set.append(attachment)
-                                    # image_url = '/web/content/ir.attachment/%d/datas' % attachment.id
-                                    # base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-                                    # image_url = f"{base_url}/web/content/ir.attachment/{attachment.id}/datas"
-                                    
-                                    # print('image_url')
-                                    # print(image_url) 
 
-                                    # line_chat._send_line_image_message(line_bot_api, attachment)
-
-                                    # line_bot_api.push_message(
-                                    #     user_id,  # 收訊人的 LINE userId
-                                    #     ImageSendMessage(
-                                    #         original_content_url=full_url,  # 原圖 URL
-                                    #         preview_image_url=full_url       # 預覽圖 URL (可用同一張)
-                                    #     )
-                                    # )
                                 elif(attachment.mimetype.startswith('audio/')):
                                     print(f"找到音訊附件：{attachment.name}")
-                                    line_chat._send_line_audio_message(line_bot_api, attachment)
+                                    audio_set.append(attachment)
 
-
+                                    
                     message_data = {
                         'subject': message.subject or '',
                         'body': message.body or '',
@@ -73,9 +54,22 @@ class MailMessage(models.Model):
                     }
 
                     print(line_chat._html_to_text_with_newlines(message_data['body']))
-                    # $$$
-                    # line_chat._send_line_text_message(line_bot_api, line_chat._html_to_text_with_newlines(message_data['body']))
+                    
+                    ''' $$$
+                    if(message_data['body']):
+                        line_chat._send_line_text_message(line_bot_api, line_chat._html_to_text_with_newlines(message_data['body']))
+                    '''
+
+                ''' $$$
                 if(image_set):
                     line_chat._send_line_image_message(line_bot_api, image_set)
+                
+                '''
+                
+                '''$$$
+                if(audio_set):
+                    line_chat._send_line_audio_message(line_bot_api, audio_set)
+                '''
+                
 
         return messages
