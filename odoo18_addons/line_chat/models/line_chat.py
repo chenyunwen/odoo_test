@@ -81,17 +81,11 @@ class LineChat(models.Model):
 
         access_token = os.environ.get('LINE_ACCESS_TOKEN')
         secret = os.environ.get('LINE_SECRET')
-
         configuration = Configuration(access_token=access_token)
         handler = WebhookHandler(secret)
-
         self._validate_signature(handler, body, signature)
-
         line_bot_api = MessagingApi(ApiClient(configuration))
-        # line_bot_api = LineBotApi(access_token)
-        print('json_data')
-        print(json_data)
-        # event = json_data['events'][0]
+
         for event in json_data['events']:
             try:
                 message_type = event['message']['type']
@@ -99,16 +93,15 @@ class LineChat(models.Model):
                 line_user_id = event['source']['userId']
                 profile = line_bot_api.get_profile(line_user_id)
                 line_name = profile.display_name
+
                 timestamp = event['timestamp'] / 1000
                 dt = datetime.datetime.fromtimestamp(timestamp)
-                filename = dt.strftime('%Y%m%d_%H%M%S')  # '20230520_153025'
+                filename = dt.strftime('%Y%m%d_%H%M%S')  # '20250520_025052'
 
                 existing_user = self.env['line.chat'].search([('line_user_id', '=', line_user_id)], limit=1)
                 if not existing_user:
                     print("new user")
                     existing_user = self._create_new_line_chat_user(line_name, line_user_id)
-                else:
-                    print("existing user")
 
                 curr_partner_id = existing_user.partner_id
                 curr_agent_partner_id = existing_user.agent_partner_id
@@ -116,16 +109,14 @@ class LineChat(models.Model):
                     
             except Exception as e:
                 raise exceptions.ValidationError(f"創建資料時錯誤: {e}")
-            
 
-            print(message_type)
             if curr_channel:
                 if message_type == 'text':
                     text = event['message']['text'] if message_type == 'text' else None
                     reply = f"已收到您說：\n{text}\n請稍等客服回應"
                     
                     self._post_odoo_text_message(curr_channel, text, curr_partner_id)
-                    # auto reply
+
                     self._reply_line_message(line_bot_api, reply_token, reply)
                     self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_id)
 
@@ -421,9 +412,9 @@ class LineChat(models.Model):
     def _post_odoo_image_set_message(self, channel, image_bytes, content_type, filename, image_set_id, is_lest_one, partner_id):
         attachment = self.env['ir.attachment'].create({
             'name': f'{filename}.jpg',
-            'datas': base64.b64encode(image_bytes).decode('utf-8'),  # Odoo 附件要 base64 字串
+            'datas': base64.b64encode(image_bytes).decode('utf-8'),
             'res_model': 'discuss.channel',
-            'res_id': channel.id,  # 討論頻道ID
+            'res_id': channel.id,
             'mimetype': content_type,
         })
 
@@ -449,8 +440,8 @@ class LineChat(models.Model):
         
     def _post_odoo_audio_message(self, channel, audio_bytes, content_type, filename, partner_id):
         attachment = self.env['ir.attachment'].create({
-            'name': f'{filename}.mp3',  # 檔名改成音訊檔
-            'datas': base64.b64encode(audio_bytes).decode('utf-8'),  # base64編碼音訊資料
+            'name': f'{filename}.mp3',
+            'datas': base64.b64encode(audio_bytes).decode('utf-8'),
             'res_model': 'discuss.channel',
             'res_id': channel.id,
             'mimetype': content_type,
@@ -468,18 +459,15 @@ class LineChat(models.Model):
     def _html_to_text_with_newlines(self, html):
         soup = BeautifulSoup(html or '', 'html.parser')
 
-        # 把 <br> 換成換行
         for br in soup.find_all("br"):
             br.replace_with("\n")
         
-        # 把 <p> 標籤後面加換行
         for p in soup.find_all("p"):
             p.insert_after("\n")
 
-        # 擷取文字
         text = soup.get_text()
 
-        # 移除連續空白行（可選）
+        # 移除連續空白行
         # text = "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
         return text
@@ -503,62 +491,3 @@ class LineChat(models.Model):
         html = "<p>" + "<br>".join(processed_lines) + "</p>"
 
         return Markup(html)
-
-
-        
-    # -----------------------------------------------------------------------------
-    # @api.depends('fakeId')
-    def action_create_channel(self):
-        print("hiiiiiiiiiiiiiii")
-        fake_partner = self.env['res.partner'].create({
-            'name': f"Guest{666}",
-            # 'email': f"fake{00}@example.com",
-        })
-        line_name = '名字'
-        members_to_add = [Command.link(self.env.user.partner_id.id)]
-        print('user id:', self.env.user.id)
-        print('user name:', self.env.user.name)
-        print('partner id:', self.env.user.partner_id.id)
-        print('partner name:', self.env.user.partner_id.name)
-        members_to_add.append(Command.link(fake_partner.id))
-        group = self.env['discuss.channel'].create({
-            'name': line_name,
-            'channel_type': 'group',
-            # 'visibility': 'private',
-            'channel_partner_ids': members_to_add #[(6, 0, test_user.partner_id.id)]
-        })
-        self.channel = group
-        print("實際聊天室成員：")
-        for p in group.channel_partner_ids:
-            print(f"- {p.name} (ID: {p.id})")
-
-        reply = '非文字訊息'
-        if self.channel:
-            msg = self.channel.message_post(
-                body=reply,
-                subject='訊息標題（可選）',
-                # subtype_xmlid='mail.mt_note',  # 留言類型（可選）
-                # partner_ids=[fake_partner.id],
-                # attachment_ids=[附件ID],
-                message_type='comment',
-                subtype_xmlid='mail.mt_comment',
-            )
-            print("訊息 ID：", msg.id)
-        else:
-            print("尚未建立聊天室。")
-
-
-    def action_message(self):
-        if self.channel:
-            msg = self.channel.message_post(
-                body='你的訊息內容',
-                subject='訊息標題（可選）',
-                # subtype_xmlid='mail.mt_note',  # 留言類型（可選）
-                # partner_ids=[fake_partner.id],
-                # attachment_ids=[附件ID],
-                message_type='comment',
-                subtype_xmlid='mail.mt_comment',
-            )
-            print("訊息 ID：", msg.id)
-        else:
-            print("尚未建立聊天室。")
