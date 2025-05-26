@@ -3,6 +3,7 @@ import contextlib
 import io
 import os
 import json
+import re
 import wave
 
 import requests
@@ -25,6 +26,7 @@ from dateutil.relativedelta import relativedelta
 from odoo.fields import Command
 from flask import Flask, request
 from bs4 import BeautifulSoup
+from markupsafe import Markup
 
 from urllib.parse import urlencode
 
@@ -384,9 +386,12 @@ class LineChat(models.Model):
 
     def _post_odoo_text_message(self, channel, text, partner_id):
         try:
-            print(text)
+            
+            html_text = self._text_to_html_with_linebreaks_and_links(text)
+            # print(html_text)
+
             msg = channel.message_post(
-                body=text,
+                body=html_text,
                 # subject= subject if subject else None,
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
@@ -448,9 +453,8 @@ class LineChat(models.Model):
             })
         else:
             existing_image_set.message_id.write({'attachment_ids': [(4, attachment.id)]})
-            count = len(existing_image_set.message_id.attachment_ids)
-            print('iiiiiiiiiiiiiiiiiiiiiiii')
-            print(count)
+            # count = len(existing_image_set.message_id.attachment_ids)
+
             if(is_lest_one):
                 existing_image_set.unlink()
         
@@ -490,6 +494,28 @@ class LineChat(models.Model):
         # text = "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
         return text
+    
+
+    def _text_to_html_with_linebreaks_and_links(self, text: str) -> str:
+        if not text:
+            return ""
+
+        def linkify(line: str) -> str:
+            url_pattern = re.compile(r'(https?://[^\s<>"]+)')
+            return url_pattern.sub(r'<a href="\1">\1</a>', line)
+        
+        lines = text.splitlines()
+        while lines and not lines[-1].strip():
+            lines.pop()
+
+        processed_lines = [linkify(line.strip()) if line.strip() else "" for line in lines]
+
+        # 用 <br> 串起來，包在單一 <p> 裡
+        html = "<p>" + "<br>".join(processed_lines) + "</p>"
+
+        return Markup(html)
+
+
         
     # -----------------------------------------------------------------------------
     # @api.depends('fakeId')
