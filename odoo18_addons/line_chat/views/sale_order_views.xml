@@ -1,0 +1,24 @@
+<odoo>
+  <record id="sale_order_tree_line_chat" model="ir.ui.view">
+  <field name="name">sale.order.list.inherit.line.chat</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.sale_order_tree"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_id']" position="after">
+        <field name="line_chat" readonly="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_order_form_line_chat" model="ir.ui.view">
+    <field name="name">sale.order.form.inherit.line.chat</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='authorized_transaction_ids']" position="after">
+        <button name="action_quotation_send_line" id="send_by_line" string="透過 LINE 發送訂單資訊" class="btn btn-success" type="object" invisible="line_chat == False" data-hotkey=""/>
+        <button name="action_quotation_send_line" id="send_by_line" string="尚無此聯絡人 LINE 帳號" class="btn disabled" type="object" invisible="not line_chat == False" data-hotkey=""/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

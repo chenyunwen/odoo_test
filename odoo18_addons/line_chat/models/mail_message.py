@@ -55,21 +55,20 @@ class MailMessage(models.Model):
 
                     print(line_chat._html_to_text_with_newlines(message_data['body']))
                     
-                    ''' $$$
+                    ''' $$$'''
                     if(message_data['body']):
                         line_chat._send_line_text_message(line_bot_api, line_chat._html_to_text_with_newlines(message_data['body']))
-                    '''
+                    ''''''
 
-                ''' $$$
+                ''' $$$'''
                 if(image_set):
                     line_chat._send_line_image_message(line_bot_api, image_set)
+                ''''''
                 
-                '''
-                
-                '''$$$
+                '''$$$'''
                 if(audio_set):
                     line_chat._send_line_audio_message(line_bot_api, audio_set)
-                '''
+                ''''''
                 
 
         return messages

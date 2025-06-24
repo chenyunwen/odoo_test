@@ -179,7 +179,7 @@ class LineChat(models.Model):
         
     
     def _create_new_line_chat_user(self, line_name, line_user_id):
-        fake_partner = self.env['res.partner'].create({'name': f"{line_name} (LINE)"})
+        fake_partner = self.env['res.partner'].create({'name': f"Guest-{line_name}"})
         least_busy_agent = self.env['line.chat.status'].search([], order='serving_count ASC', limit=1)
 
         if least_busy_agent and least_busy_agent.partner_id:
