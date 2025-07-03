@@ -8,6 +8,8 @@ from linebot.v3.messaging import (
     MessagingApi,
 )
 
+from .. import constants
+
 class MailMessage(models.Model):
     _inherit = 'mail.message'
     @api.model_create_multi
@@ -24,10 +26,9 @@ class MailMessage(models.Model):
             partner = self.env['line.chat.status'].search([('partner_id', '=', partner_id)], limit=1)
 
             if(line_chat and partner):
-                # access_token = os.environ.get('LINE_ACCESS_TOKEN')
                 config = self.env['ir.config_parameter'].sudo()
-                access_token = config.get_param('line_chat.line_access_token')
-                
+                access_token = config.get_param(constants.LINE_CONFIG_KEYS["access_token"])
+
                 configuration = Configuration(access_token=access_token)
                 line_bot_api = MessagingApi(ApiClient(configuration))
 

@@ -5,15 +5,11 @@ import base64
 import hmac
 import hashlib
 import time
+from .. import constants
 
 class SecureMediaController(http.Controller):
 
-    # SIGN_SECRET = os.environ.get('LINE_SIGN_SECRET')
-    # IMAGE_PATH = os.environ.get('IMAGE_PATH')
-    # AUDIO_PATH = os.environ.get('AUDIO_PATH')
-
-    # @http.route(f'{IMAGE_PATH}/<int:attachment_id>.<string:ext>', type='http', auth='public', methods=['GET'], csrf=False)
-    @http.route('/line/image/<int:attachment_id>.<string:ext>', type='http', auth='public', methods=['GET'], csrf=False)
+    @http.route(f'{constants.DEFAULTS["image_path"]}/<int:attachment_id>.<string:ext>', type='http', auth='public', methods=['GET'], csrf=False)
     def secure_image(self, attachment_id, signature=None, expires=None, **kw):
 
         # if not signature or not expires:
@@ -49,7 +45,7 @@ class SecureMediaController(http.Controller):
             # ('Content-Disposition', f'attachment; filename="{filename}"')
         ])
     
-    @http.route('/line/audio/<int:attachment_id>.<string:ext>', type='http', auth='public', methods=['GET'], csrf=False)
+    @http.route(f'{constants.DEFAULTS["audio_path"]}/<int:attachment_id>.<string:ext>', type='http', auth='public', methods=['GET'], csrf=False)
     def secure_audio(self, attachment_id, signature=None, expires=None, **kw):
 
         attachment = request.env['ir.attachment'].sudo().browse(attachment_id)

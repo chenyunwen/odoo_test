@@ -55,6 +55,8 @@ from linebot.v3.webhooks import (
     TextMessageContent
 )
 
+from .. import constants
+
 
 
 class LineChat(models.Model):
@@ -80,10 +82,9 @@ class LineChat(models.Model):
         json_data = json.loads(body) 
 
         config = self.env['ir.config_parameter'].sudo()
-        # access_token = os.environ.get('LINE_ACCESS_TOKEN')
-        # secret = os.environ.get('LINE_SECRET')
-        access_token = config.get_param('line_chat.line_access_token')
-        secret = config.get_param('line_chat.line_secret')
+
+        access_token = config.get_param(constants.LINE_CONFIG_KEYS["access_token"])
+        secret = config.get_param(constants.LINE_CONFIG_KEYS["secret"])
 
         configuration = Configuration(access_token=access_token)
         handler = WebhookHandler(secret)
@@ -246,14 +247,10 @@ class LineChat(models.Model):
     def _send_line_image_message(self, line_bot_api, attachments, expire_seconds=300):
         config = self.env['ir.config_parameter'].sudo()
         # secret = config.get_param('line_chat.line_sign_secret')
-        # secret = os.environ.get('LINE_SIGN_SECRET')  # 要跟 Controller 中一樣
 
         try:
-            
-            # BASE_URL = os.environ.get('BASE_URL')
-            # IMAGE_PATH = os.environ.get('IMAGE_PATH')
             BASE_URL = config.get_param('line_chat.base_url')
-            IMAGE_PATH = '/line/image'
+            IMAGE_PATH = constants.DEFAULTS["image_path"]
             print(IMAGE_PATH)
             messages = []
             for attachment in attachments:
@@ -338,13 +335,10 @@ class LineChat(models.Model):
         
         config = self.env['ir.config_parameter'].sudo()
         # secret = config.get_param('line_chat.line_sign_secret')
-        # secret = os.environ.get('LINE_SIGN_SECRET')
 
         try:
-            # BASE_URL = os.environ.get('BASE_URL')
-            # AUDIO_PATH = os.environ.get('AUDIO_PATH')
             BASE_URL = config.get_param('line_chat.base_url')
-            AUDIO_PATH = '/line/audio'
+            AUDIO_PATH = constants.DEFAULTS["audio_path"]
             print(BASE_URL)
 
             messages = []
