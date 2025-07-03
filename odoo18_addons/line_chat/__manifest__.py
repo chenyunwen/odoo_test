@@ -10,6 +10,7 @@
       'views/line_chat_status_views.xml',
       'views/line_image_set_views.xml',
       'views/sale_order_views.xml',
+      'views/res_config_settings_views.xml',
     ],
     'installable': True,
     'application': True,

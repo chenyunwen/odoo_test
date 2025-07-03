@@ -79,8 +79,12 @@ class LineChat(models.Model):
 
         json_data = json.loads(body) 
 
-        access_token = os.environ.get('LINE_ACCESS_TOKEN')
-        secret = os.environ.get('LINE_SECRET')
+        config = self.env['ir.config_parameter'].sudo()
+        # access_token = os.environ.get('LINE_ACCESS_TOKEN')
+        # secret = os.environ.get('LINE_SECRET')
+        access_token = config.get_param('line_chat.line_access_token')
+        secret = config.get_param('line_chat.line_secret')
+
         configuration = Configuration(access_token=access_token)
         handler = WebhookHandler(secret)
         self._validate_signature(handler, body, signature)
@@ -240,19 +244,23 @@ class LineChat(models.Model):
             raise exceptions.ValidationError(f"回覆 LINE 訊息時錯誤: {e}")
     
     def _send_line_image_message(self, line_bot_api, attachments, expire_seconds=300):
-        
-        secret = os.environ.get('LINE_SIGN_SECRET')  # 要跟 Controller 中一樣
+        config = self.env['ir.config_parameter'].sudo()
+        # secret = config.get_param('line_chat.line_sign_secret')
+        # secret = os.environ.get('LINE_SIGN_SECRET')  # 要跟 Controller 中一樣
 
         try:
-            BASE_URL = os.environ.get('BASE_URL')
-            IMAGE_PATH = os.environ.get('IMAGE_PATH')
             
+            # BASE_URL = os.environ.get('BASE_URL')
+            # IMAGE_PATH = os.environ.get('IMAGE_PATH')
+            BASE_URL = config.get_param('line_chat.base_url')
+            IMAGE_PATH = '/line/image'
+            print(IMAGE_PATH)
             messages = []
             for attachment in attachments:
                 # expires = int(time.time()) + expire_seconds
                 # data = f"{attachment.id}:{expires}".encode('utf-8')
-                data = f"{attachment.id}".encode('utf-8')
-                signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
+                # data = f"{attachment.id}".encode('utf-8')
+                # signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
 
                 
                 ext = os.path.splitext(attachment.name or '')[1] or '.jpg'
@@ -328,18 +336,23 @@ class LineChat(models.Model):
 
     def _send_line_audio_message(self, line_bot_api, attachments, expire_seconds=300):
         
-        secret = os.environ.get('LINE_SIGN_SECRET')
+        config = self.env['ir.config_parameter'].sudo()
+        # secret = config.get_param('line_chat.line_sign_secret')
+        # secret = os.environ.get('LINE_SIGN_SECRET')
 
         try:
-            BASE_URL = os.environ.get('BASE_URL')
-            AUDIO_PATH = os.environ.get('AUDIO_PATH')
+            # BASE_URL = os.environ.get('BASE_URL')
+            # AUDIO_PATH = os.environ.get('AUDIO_PATH')
+            BASE_URL = config.get_param('line_chat.base_url')
+            AUDIO_PATH = '/line/audio'
+            print(BASE_URL)
 
             messages = []
             for attachment in attachments:
                 # expires = int(time.time()) + expire_seconds
                 # data = f"{attachment.id}:{expires}".encode('utf-8')
-                data = f"{attachment.id}".encode('utf-8')
-                signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
+                # data = f"{attachment.id}".encode('utf-8')
+                # signature = hmac.new(secret.encode(), data, hashlib.sha256).hexdigest()
                 
                 ext = os.path.splitext(attachment.name or '')[1] or '.m4a'
                 url = f"{BASE_URL}{AUDIO_PATH}/{attachment.id}{ext}"

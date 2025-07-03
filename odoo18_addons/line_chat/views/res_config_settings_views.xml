@@ -1,0 +1,71 @@
+<odoo>
+  <record id="res_config_settings_view_form_line_chat" model="ir.ui.view">
+    <field name="name">res.config.settings.view.form.inherit.line.chat</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form" position="inside">
+        <app data-string="Line" string="Line" name="line.chat">
+          <block title="Channel 資訊" id="line_chat_info_settings">
+            <setting>
+              <div class="content-group">
+                <div class="row mt8">
+                  <label class="mr8" string="Channel access token" for="line_access_token" help="66666666"/>
+                  <field name="line_access_token" placeholder="channel access token"/>
+                  <div style="color: #aaa; font-size: 12px;">
+                    <span>前往 LINE Developers 設定頁面</span><br/>
+                    <span>TOP &gt; 商業帳號名稱 &gt; 官方帳號名稱 &gt; Messaging API</span><br/>
+                    <span>找到 Channel access token</span>
+                  </div>
+                </div>
+
+                <div class="row mt8">
+                  <label class="mr8" string="Channel secret" for="line_secret"/>
+                  <field name="line_secret" placeholder="channel secret"/>
+                  <div style="color: #aaa; font-size: 12px;">
+                    <span>前往 LINE Developers 設定頁面</span><br/>
+                    <span>TOP &gt; 商業帳號名稱 &gt; 官方帳號名稱</span><br/>
+                    <span>找到 Channel secret </span>
+                  </div>
+                  
+                </div>
+              </div>
+            </setting>
+          </block>
+          
+
+          <block title="LINE callback 相關設定" id="line_callback_settings">
+            <setting>
+              <div class="content-group">
+                <div class="row mt8">
+                  <label class="mr8" string="Base URL" for="base_url"/>
+                  <field name="base_url" placeholder="https://your.website.url"/>
+                  <div style="color: #aaa; font-size: 12px;">
+                    <span>此網址應為 LINE webhook 的接收位址</span><br/>
+                    <span>例如：部署伺服器的 HTTPS 網址</span>
+                  </div>
+                </div>
+
+                <div class="row mt8">
+                  <label class="mr8" string="圖片上傳路徑" for="image_path"/>
+                  <field name="image_path" placeholder="/line/image"/>
+                  <div style="color: #aaa; font-size: 12px;">
+                    <span>圖片訊息會透過此路徑提供連結給 LINE</span><br/>
+                  </div>
+                </div>
+
+                <div class="row mt8">
+                  <label class="mr8" string="音訊上傳路徑" for="audio_path"/>
+                  <field name="audio_path" placeholder="/line/audio"/>
+                  <div style="color: #aaa; font-size: 12px;">
+                    <span>音訊訊息會透過此路徑提供連結給 LINE</span><br/>
+                  </div>
+                </div>
+              </div>
+            </setting>
+          </block>
+        </app>
+      </xpath>
+    </field>
+  </record>
+</odoo>
