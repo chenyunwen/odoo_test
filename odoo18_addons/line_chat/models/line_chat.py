@@ -6,25 +6,25 @@ import json
 import re
 import wave
 
-import requests
+# import requests
 import httpx
 import datetime
 import tempfile
 import time
-import hmac
-import hashlib
+# import hmac
+# import hashlib
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
-from mutagen.wave import WAVE
+# from mutagen.wave import WAVE
 
 # from dotenv import load_dotenv
 
 from odoo import api, fields, models, exceptions, tools
 from odoo.tools.config import config
-from datetime import date
-from dateutil.relativedelta import relativedelta
+# from datetime import date
+# from dateutil.relativedelta import relativedelta
 from odoo.fields import Command
-from flask import Flask, request
+# from flask import Flask, request
 from bs4 import BeautifulSoup
 from markupsafe import Markup
 
