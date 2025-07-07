@@ -1,5 +1,5 @@
 import os
-from odoo import models, api
+from odoo import models, api, _
 # from linebot import LineBotApi
 
 from linebot.v3.messaging import (
@@ -41,11 +41,11 @@ class MailMessage(models.Model):
                         for attachment in message.attachment_ids:
                             if(attachment.mimetype):
                                 if(attachment.mimetype.startswith('image/')):
-                                    print(f"找到圖片附件：{attachment.name}")
+                                    print(_('找到圖片附件：%s') % attachment.name)
                                     image_set.append(attachment)
 
                                 elif(attachment.mimetype.startswith('audio/')):
-                                    print(f"找到音訊附件：{attachment.name}")
+                                    print(_('找到音訊附件：%s') % attachment.name)
                                     audio_set.append(attachment)
 
                                     
@@ -56,23 +56,14 @@ class MailMessage(models.Model):
                         'date': str(message.date),
                         'attachment_ids': message.attachment_ids
                     }
-
-                    print(line_chat._html_to_text_with_newlines(message_data['body']))
                     
-                    ''' $$$'''
                     if(message_data['body']):
                         line_chat._send_line_text_message(line_bot_api, line_chat._html_to_text_with_newlines(message_data['body']))
-                    ''''''
 
-                ''' $$$'''
                 if(image_set):
                     line_chat._send_line_image_message(line_bot_api, image_set)
-                ''''''
                 
-                '''$$$'''
                 if(audio_set):
-                    line_chat._send_line_audio_message(line_bot_api, audio_set)
-                ''''''
-                
+                    line_chat._send_line_audio_message(line_bot_api, audio_set)                
 
         return messages

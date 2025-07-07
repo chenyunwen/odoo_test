@@ -1,6 +1,6 @@
 # controllers/main.py
 
-from odoo import http
+from odoo import http, _
 from odoo.http import request
 import json
 import logging
@@ -17,11 +17,15 @@ class LineWebhookController(http.Controller):
             signature = request.httprequest.headers['X-Line-Signature']
 
             if not signature:
-                return {"error": "Missing signature"}, 403
+                # return {"error": "Missing signature"}, 403
+                return {"error": _("Missing signature")}, 403
 
             request.env['line.chat'].sudo().handle_webhook_getMsg(body, signature)
             return {"status": "ok"}
 
         except Exception as e:
-            _logger.error(f"Webhook 處理失敗: {e}", exc_info=True)
-            return {"status": "error", "message": str(e)}
+            _logger.error(_("Webhook 處理失敗: %s") % e, exc_info=True)
+            return {
+                "status": "error",
+                "message": _("Webhook 處理失敗: %s") % str(e)
+            }

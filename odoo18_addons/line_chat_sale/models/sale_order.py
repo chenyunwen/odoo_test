@@ -1,4 +1,4 @@
-from odoo import fields, models, api
+from odoo import fields, models, api, _
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -26,4 +26,13 @@ class SaleOrder(models.Model):
             報價日期:{self.date_order}\n\
             金額（未稅+稅金=總計）:{self.amount_untaxed} + {self.amount_tax} = {self.amount_total}"
             line_chat._post_odoo_text_message(line_chat.channel, f"已建立報價:\n {message}", line_chat.agent_partner_id)
-        return True
+        return  {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _("已傳送"),
+                'type': 'success',
+                'message': _("已成功透過 LINE 發送訂單資訊"),
+                'sticky': False,
+            },
+        }

@@ -19,7 +19,7 @@ from mutagen.mp4 import MP4
 
 # from dotenv import load_dotenv
 
-from odoo import api, fields, models, exceptions, tools
+from odoo import api, fields, models, exceptions, tools, _
 from odoo.tools.config import config
 # from datetime import date
 # from dateutil.relativedelta import relativedelta
@@ -113,12 +113,12 @@ class LineChat(models.Model):
                 curr_channel = existing_user.channel
                     
             except Exception as e:
-                raise exceptions.ValidationError(f"創建資料時錯誤: {e}")
+                raise exceptions.ValidationError(_("創建資料時錯誤: %s") % e)
 
             if curr_channel:
                 if message_type == 'text':
                     text = event['message']['text'] if message_type == 'text' else None
-                    reply = f"已收到您說：\n{text}\n請稍等客服回應"
+                    reply = _("已收到您說：\n%s\n請稍等客服回應") % text
                     
                     self._post_odoo_text_message(curr_channel, text, curr_partner_id)
 
@@ -148,13 +148,13 @@ class LineChat(models.Model):
                     self._post_odoo_audio_message(curr_channel, message_content, content_type, filename, curr_partner_id)
                         
                 else:
-                    text = '非文字訊息'
-                    reply= f"暫時無法解析 {message_type} 類別的訊息"
+                    text = _("非文字訊息")
+                    reply = _("暫時無法解析 %s 類別的訊息") % message_type
                     self._post_odoo_text_message(curr_channel, text, curr_partner_id)
                     self._reply_line_message(line_bot_api, reply_token, reply)
                     self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_id)
-            else:
-                print("尚未建立聊天室。")
+            # else:
+            #     print("尚未建立聊天室。")
 
 
 
@@ -163,7 +163,7 @@ class LineChat(models.Model):
         try:
             handler.handle(body, signature)
         except Exception as e:
-            raise exceptions.ValidationError(f"LINE 簽章驗證失敗: {e}")
+            raise exceptions.ValidationError(_("LINE 簽章驗證失敗: %s") % e)
     
 
     def _download_line_media_file_with_retry(self, message_id, access_token, retries=3, delay=2):
@@ -224,7 +224,7 @@ class LineChat(models.Model):
             line_bot_api.reply_message(reply_request)
 
         except Exception as e:
-            raise exceptions.ValidationError(f"即時回覆 LINE 訊息時錯誤: {e}")
+            raise exceptions.ValidationError(_("即時回覆 LINE 訊息時錯誤: %s") % e)
 
 
     def _send_line_text_message(self, line_bot_api, text):
@@ -242,7 +242,7 @@ class LineChat(models.Model):
             # line_bot_api.push_message(self.line_user_id, TextSendMessage(text))
             
         except Exception as e:
-            raise exceptions.ValidationError(f"回覆 LINE 訊息時錯誤: {e}")
+            raise exceptions.ValidationError(_("回覆 LINE 訊息時錯誤: %s") % e)
     
     def _send_line_image_message(self, line_bot_api, attachments, expire_seconds=300):
         config = self.env['ir.config_parameter'].sudo()
@@ -287,7 +287,7 @@ class LineChat(models.Model):
 
             line_bot_api.push_message(push_request)
         except Exception as e:
-            raise exceptions.ValidationError(f"LINE 傳送圖片失敗：{e}")
+            raise exceptions.ValidationError(_("LINE 傳送圖片失敗：%s") % e)
         
     def get_audio_duration_ms(self, attachment):
         try:
@@ -308,14 +308,12 @@ class LineChat(models.Model):
                     elif suffix in ['.m4a', '.mp4', '.aac']:
                         audio = MP4(tmp_path)
                     
-                    print('audio')
-                    print(audio)
                     if audio and audio.info.length:
                         duration_ms = int(audio.info.length * 1000)
                         return duration_ms
                 except Exception as e:
-                    raise ValueError(f"無法讀取音訊：{e}")  
-                  
+                    raise ValueError(_("無法讀取音訊： %s") % e)
+
             elif suffix in ['.wav']:
                 try:
                     with contextlib.closing(wave.open(io.BytesIO(audio_data), 'rb')) as wf:
@@ -325,11 +323,11 @@ class LineChat(models.Model):
                         duration_ms = int(duration * 1000)
                         return duration_ms
                 except Exception as e:
-                    raise exceptions.ValidationError(f"無法讀取wav音訊：{e}")
+                    raise exceptions.ValidationError(_("無法讀取wav音訊： %s") % e)
             else:
-                raise exceptions.ValidationError(f"不支援的音訊格式：{suffix}")
+                raise exceptions.ValidationError(_("不支援的音訊格式： %s") % suffix)
         except Exception as e:
-            raise exceptions.ValidationError(f"無法取得語音長度：{e}")
+            raise exceptions.ValidationError(_("無法取得語音長度：%s") % e)
 
     def _send_line_audio_message(self, line_bot_api, attachments, expire_seconds=300):
         
@@ -369,7 +367,7 @@ class LineChat(models.Model):
             line_bot_api.push_message(push_request)
 
         except Exception as e:
-            raise exceptions.ValidationError(f"LINE 傳送語音失敗：{e}")
+            raise exceptions.ValidationError(_("LINE 傳送語音失敗： %s") % e)
 
     def _post_odoo_text_message(self, channel, text, partner_id):
         try:
@@ -388,7 +386,7 @@ class LineChat(models.Model):
             # print("發送者 ID：", partner_id.id)
 
         except Exception as e:
-            raise exceptions.ValidationError(f"發送訊息時錯誤: {e}")
+            raise exceptions.ValidationError(_("發送訊息時錯誤： %s") % e)
         
     def _post_odoo_image_message(self, channel, image_bytes, content_type, filename, partner_id):
         attachment = self.env['ir.attachment'].create({

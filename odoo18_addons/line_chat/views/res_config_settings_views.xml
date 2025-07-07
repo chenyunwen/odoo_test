@@ -10,7 +10,7 @@
             <setting>
               <div class="content-group">
                 <div class="row mt8">
-                  <label class="mr8" string="Channel access token" for="line_access_token" help="66666666"/>
+                  <label class="mr8" string="Channel access token" for="line_access_token"/>
                   <field name="line_access_token" placeholder="channel access token"/>
                   <div style="color: #aaa; font-size: 12px;">
                     <span>前往 LINE Developers 設定頁面</span><br/>
