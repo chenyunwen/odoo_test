@@ -29,15 +29,13 @@ class MailMessage(models.Model):
             channel_id = message.res_id if message.model == 'discuss.channel' else None
             
             if(channel_id):
-                print('message.author_id')
-                print(message.author_id)
                 line_chat = self.env['line.chat'].search([('channel', '=', channel_id)], limit=1)
                 # partner = self.env['line.chat.status'].search([('partner_id', '=', partner_id)], limit=1)
 
                 if(line_chat):
-                    print("與 LINE 同步的訊息")
+                    # 與 LINE 同步的訊息
                     if(message.author_id.id == line_chat.partner_id.id):
-                        print("此為由客戶端接收的訊息")
+                        # 此為由客戶端接收的訊息
                         continue
                     
                     config = self.env['ir.config_parameter'].sudo()
