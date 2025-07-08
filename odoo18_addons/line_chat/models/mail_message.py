@@ -15,30 +15,41 @@ class MailMessage(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         messages = super(MailMessage, self).create(vals_list)
+
         print('vals_list')
         print(vals_list)
 
-        channel_id = next((vals.get('res_id') for vals in vals_list if vals.get('model') == 'discuss.channel'), None)
-        partner_id = next((vals.get('author_id') for vals in vals_list if vals.get('model') == 'discuss.channel'), None)
-        
-        if(channel_id and partner_id):
-            line_chat = self.env['line.chat'].search([('channel', '=', channel_id)], limit=1)
-            # partner = self.env['line.chat.status'].search([('partner_id', '=', partner_id)], limit=1)
 
-            if(line_chat):
-                
-                if(partner_id == line_chat.partner_id.id):
-                    return messages
-                
-                config = self.env['ir.config_parameter'].sudo()
-                access_token = config.get_param(constants.LINE_CONFIG_KEYS["access_token"])
+        for message in messages:
 
-                configuration = Configuration(access_token=access_token)
-                line_bot_api = MessagingApi(ApiClient(configuration))
+            if(message.message_type == 'notification'):
+                # 邀請訊息...等通知不需要傳送 LINE 訊息
+                continue
 
-                image_set = []
-                audio_set = []
-                for message in messages:
+            channel_id = message.res_id if message.model == 'discuss.channel' else None
+            
+            if(channel_id):
+                print('message.author_id')
+                print(message.author_id)
+                line_chat = self.env['line.chat'].search([('channel', '=', channel_id)], limit=1)
+                # partner = self.env['line.chat.status'].search([('partner_id', '=', partner_id)], limit=1)
+
+                if(line_chat):
+                    print("與 LINE 同步的訊息")
+                    if(message.author_id.id == line_chat.partner_id.id):
+                        print("此為由客戶端接收的訊息")
+                        continue
+                    
+                    config = self.env['ir.config_parameter'].sudo()
+                    access_token = config.get_param(constants.LINE_CONFIG_KEYS["access_token"])
+
+                    configuration = Configuration(access_token=access_token)
+                    line_bot_api = MessagingApi(ApiClient(configuration))
+
+                    image_set = []
+                    audio_set = []
+
+                    # for message in messages:
                     if(message.attachment_ids):
                         print(message.attachment_ids)
                         # attachments = message.attachment_ids.filtered(lambda a: a.mimetype and a.mimetype.startswith('image/'))
@@ -52,22 +63,22 @@ class MailMessage(models.Model):
                                     print(_('找到音訊附件：%s') % attachment.name)
                                     audio_set.append(attachment)
 
-                                    
-                    message_data = {
-                        'subject': message.subject or '',
-                        'body': message.body or '',
-                        'author': message.author_id.name or '',
-                        'date': str(message.date),
-                        'attachment_ids': message.attachment_ids
-                    }
-                    
-                    if(message_data['body']):
-                        line_chat._send_line_text_message(line_bot_api, line_chat._html_to_text_with_newlines(message_data['body']))
+                                        
+                    # message_data = {
+                    #     'subject': message.subject or '',
+                    #     'body': message.body or '',
+                    #     'author': message.author_id.name or '',
+                    #     'date': str(message.date),
+                    #     'attachment_ids': message.attachment_ids
+                    # }
+                        
+                    if(message.body):
+                        line_chat._send_line_text_message(line_bot_api, line_chat._html_to_text_with_newlines(message.body))
 
-                if(image_set):
-                    line_chat._send_line_image_message(line_bot_api, image_set)
-                
-                if(audio_set):
-                    line_chat._send_line_audio_message(line_bot_api, audio_set)                
+                    if(image_set):
+                        line_chat._send_line_image_message(line_bot_api, image_set)
+                    
+                    if(audio_set):
+                        line_chat._send_line_audio_message(line_bot_api, audio_set)                
 
         return messages
