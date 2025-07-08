@@ -121,7 +121,6 @@ class LineChat(models.Model):
                     reply = _("已收到您說：\n%s\n請稍等客服回應") % text
                     
                     self._post_odoo_text_message(curr_channel, text, curr_partner_id)
-
                     self._reply_line_message(line_bot_api, reply_token, reply)
                     self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_id)
 
@@ -196,11 +195,25 @@ class LineChat(models.Model):
         least_busy_agent.serving_count += 1
         members_to_add.append(Command.link(fake_partner.id))
 
+        # channel = self.env['discuss.channel'].create({
+        #     'name': line_name,
+        #     'channel_type': 'chat',
+        #     'channel_partner_ids': members_to_add
+        # })
+        
+        # -----
+        # channel = self.env['discuss.channel'].create({
+        #     'name': 'Private Channel',
+        #     'channel_type': 'group',
+        #     'channel_partner_ids': [(6, 0, self.partner_employee.id)]
+        # })
         channel = self.env['discuss.channel'].create({
-            'name': line_name,
-            'channel_type': 'chat',
-            'channel_partner_ids': members_to_add
+            'name': f"Guest-{line_name}（LINE）",
+            'channel_type': 'group',
+            'channel_partner_ids': members_to_add,
         })
+        # channel = self.env['discuss.channel'].create_group(partners_to=members_to_add)
+        # ------
 
         return self.env['line.chat'].create({
             'name': line_name,
@@ -214,8 +227,8 @@ class LineChat(models.Model):
     def _reply_line_message(self, line_bot_api, reply_token, text):
         try:
             messages = [
-                TextMessage(text=text),
-                TextMessage(text="請稍等客服回應")
+                TextMessage(text=f"r : {text}"),
+                TextMessage(text="r請稍等客服回應")
             ]
             reply_request = ReplyMessageRequest(
                 reply_token=reply_token,
@@ -251,7 +264,7 @@ class LineChat(models.Model):
         try:
             BASE_URL = config.get_param('line_chat.base_url')
             IMAGE_PATH = constants.DEFAULTS["image_path"]
-            print(IMAGE_PATH)
+
             messages = []
             for attachment in attachments:
                 # expires = int(time.time()) + expire_seconds
@@ -264,7 +277,6 @@ class LineChat(models.Model):
                 # params = urlencode({'signature': signature, 'expires': expires})
                 # params = urlencode({'signature': signature})
                 url = f"{BASE_URL}{IMAGE_PATH}/{attachment.id}{ext}" # ?{params}"
-                print(url)
 
                 # line_bot_api.push_message(
                 #     self.line_user_id,  
@@ -337,7 +349,6 @@ class LineChat(models.Model):
         try:
             BASE_URL = config.get_param('line_chat.base_url')
             AUDIO_PATH = constants.DEFAULTS["audio_path"]
-            print(BASE_URL)
 
             messages = []
             for attachment in attachments:
@@ -475,7 +486,7 @@ class LineChat(models.Model):
         # 移除連續空白行
         # text = "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
-        return text
+        return text.rstrip()
     
 
     def _text_to_html_with_linebreaks_and_links(self, text: str) -> str:

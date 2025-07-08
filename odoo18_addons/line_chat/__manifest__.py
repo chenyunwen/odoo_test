@@ -9,7 +9,6 @@
       'views/line_chat_views.xml',
       'views/line_chat_status_views.xml',
       'views/line_image_set_views.xml',
-      # 'views/sale_order_views.xml',
       'views/res_config_settings_views.xml',
     ],
     'images': ['static/description/icon.png'],

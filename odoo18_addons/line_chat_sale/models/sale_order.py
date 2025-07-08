@@ -20,12 +20,16 @@ class SaleOrder(models.Model):
                 property.line_channel = False
 
     def action_quotation_send_line(self):
-        line_chat = self.env['line.chat'].search([('partner_id', '=', self.partner_id.id)], limit=1)
-        if(line_chat): 
+        self.ensure_one()
+        # line_chat = self.env['line.chat'].search([('partner_id', '=', self.partner_id.id)], limit=1)
+        if(self.line_chat): 
             message = f"訂單 #{self.name}\n \
             報價日期:{self.date_order}\n\
             金額（未稅+稅金=總計）:{self.amount_untaxed} + {self.amount_tax} = {self.amount_total}"
-            line_chat._post_odoo_text_message(line_chat.channel, f"已建立報價:\n {message}", line_chat.agent_partner_id)
+
+            # 將傳送此訂單的帳號加入聊天室
+            self.line_chat.channel.add_members(self.env.user.partner_id.id)
+            self.line_chat._post_odoo_text_message(self.line_chat.channel, f"已建立報價:\n {message}", self.env.user.partner_id)
         return  {
             'type': 'ir.actions.client',
             'tag': 'display_notification',

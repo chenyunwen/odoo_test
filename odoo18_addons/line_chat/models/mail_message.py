@@ -23,9 +23,13 @@ class MailMessage(models.Model):
         
         if(channel_id and partner_id):
             line_chat = self.env['line.chat'].search([('channel', '=', channel_id)], limit=1)
-            partner = self.env['line.chat.status'].search([('partner_id', '=', partner_id)], limit=1)
+            # partner = self.env['line.chat.status'].search([('partner_id', '=', partner_id)], limit=1)
 
-            if(line_chat and partner):
+            if(line_chat):
+                
+                if(partner_id == line_chat.partner_id.id):
+                    return messages
+                
                 config = self.env['ir.config_parameter'].sudo()
                 access_token = config.get_param(constants.LINE_CONFIG_KEYS["access_token"])
 
