@@ -67,11 +67,26 @@ class LineChat(models.Model):
     partner_id = fields.Many2one(
         'res.partner', string='聯絡人名稱', index=True, readonly=True, copy=False, 
     )
-    agent_partner_id = fields.Many2one(
-        'res.partner', string='客服人員', index=True, readonly=True, copy=False, 
+    # agent_partner_id = fields.Many2one(
+    #     'res.partner', string='客服人員', index=True, readonly=True, copy=False, 
+    # )
+    agent_partner_ids = fields.Many2many(
+        'res.partner', string='客服人員', index=True, copy=False, readonly=True,  
+        compute="_get_agent_partner",
     )
     channel = fields.Many2one('discuss.channel', string='聊天室', readonly=True)
 
+    @api.depends("channel.channel_partner_ids")
+    def _get_agent_partner(self):
+        for property in self:
+            # property.agent_partner_id_2 = property.channel.channel_partner_ids
+            property.agent_partner_ids = property.channel.sudo().channel_partner_ids.filtered(
+                lambda p: p.id != property.partner_id.id
+            )
+            if not property.agent_partner_ids:
+                admin = self.env.ref('base.user_admin')
+                self.channel.add_members([admin.partner_id.id])
+                property.channel.channel_partner_ids += admin.partner_id
 
     # --------------------------------------------------------------------------
     
@@ -109,7 +124,7 @@ class LineChat(models.Model):
                     existing_user = self._create_new_line_chat_user(line_name, line_user_id)
 
                 curr_partner_id = existing_user.partner_id
-                curr_agent_partner_id = existing_user.agent_partner_id
+                curr_agent_partner_ids = existing_user.agent_partner_ids
                 curr_channel = existing_user.channel
                     
             except Exception as e:
@@ -122,7 +137,7 @@ class LineChat(models.Model):
                     
                     self._post_odoo_text_message(curr_channel, text, curr_partner_id)
                     self._reply_line_message(line_bot_api, reply_token, reply)
-                    self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_id)
+                    self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_ids[0])
 
                     #   $$$
                     # self._send_line_text_message(line_bot_api, reply)
@@ -151,7 +166,7 @@ class LineChat(models.Model):
                     reply = _("暫時無法解析 %s 類別的訊息") % message_type
                     self._post_odoo_text_message(curr_channel, text, curr_partner_id)
                     self._reply_line_message(line_bot_api, reply_token, reply)
-                    self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_id)
+                    self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_ids[0])
             # else:
             #     print("尚未建立聊天室。")
 
@@ -185,13 +200,11 @@ class LineChat(models.Model):
     def _create_new_line_chat_user(self, line_name, line_user_id):
         fake_partner = self.env['res.partner'].create({'name': f"Guest-{line_name}"})
         least_busy_agent = self.env['line.chat.status'].search([], order='serving_count ASC', limit=1)
-
         if least_busy_agent and least_busy_agent.partner_id:
             members_to_add = [Command.link(least_busy_agent.partner_id.id)]
         else:
             least_busy_agent = self.env.ref('base.user_admin')
             members_to_add = [Command.link(least_busy_agent.partner_id.id)]
-
         least_busy_agent.serving_count += 1
         members_to_add.append(Command.link(fake_partner.id))
 
@@ -220,7 +233,7 @@ class LineChat(models.Model):
             'line_user_id': line_user_id,
             'partner_id': fake_partner.id,
             'channel': channel.id,
-            'agent_partner_id': least_busy_agent.partner_id.id
+            'agent_partner_ids':  [(4, least_busy_agent.partner_id.id)]
         })
     
 
@@ -277,7 +290,7 @@ class LineChat(models.Model):
                 # params = urlencode({'signature': signature, 'expires': expires})
                 # params = urlencode({'signature': signature})
                 url = f"{BASE_URL}{IMAGE_PATH}/{attachment.id}{ext}" # ?{params}"
-
+                print(f"IMAGE URL: {url}")
                 # line_bot_api.push_message(
                 #     self.line_user_id,  
                 #     ImageSendMessage(
@@ -291,7 +304,7 @@ class LineChat(models.Model):
                         preview_image_url=url
                     )
                 )
-            print(messages)    
+
             push_request = PushMessageRequest(
                 to=self.line_user_id,
                 messages=messages

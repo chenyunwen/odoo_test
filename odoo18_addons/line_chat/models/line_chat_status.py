@@ -14,7 +14,7 @@ class LineChatStatus(models.Model):
         index=True
     )
 
-    serving_count = fields.Integer(string=_('服務中人數'), default=0, readonly=True)
+    serving_count = fields.Integer(string=_('服務中人數'), default=0, readonly=True, compute='_get_serving_count', store=True)
 
     _sql_constraints = [
         ('partner_id_unique', 'unique(partner_id)', _('客服人員不可重複！'))
@@ -28,3 +28,13 @@ class LineChatStatus(models.Model):
         ])
         partner_ids = internal_users.mapped('partner_id').ids
         return [('id', 'in', partner_ids)]
+
+    @api.depends('partner_id')
+    def _get_serving_count(self):
+        all_chats = self.env['line.chat'].search([])
+        for record in self:
+            count = 0
+            for chat in all_chats:
+                if record.partner_id in chat.channel.sudo().channel_partner_ids:
+                    count += 1
+            record.serving_count = count

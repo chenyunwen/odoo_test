@@ -3,7 +3,7 @@
     'version': '1.0',
     'category': 'Sales/Line',
     'summary': '將 Odoo 中的客服訊息與 LINE 官方帳號串接，並支援圖片與音訊回覆。',
-    'depends': ['base', 'mail', ], # ,'sale'
+    'depends': ['base', 'mail'], # ,'sale'
     'data': [
       'security/ir.model.access.csv',
       'views/line_chat_views.xml',

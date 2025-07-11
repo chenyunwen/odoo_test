@@ -9,7 +9,8 @@
         <field name="line_user_id"/>
         <field name="partner_id"/>
         <field name="channel"/>
-        <field name="agent_partner_id"/>
+        <!-- <field name="agent_partner_id"/> -->
+        <field name="agent_partner_ids"/>
       <!-- </group> -->
       </list>
     </field>
