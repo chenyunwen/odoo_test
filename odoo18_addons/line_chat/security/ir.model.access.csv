@@ -1,4 +1,9 @@
 id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
-access_line_chat,access.line.chat,model_line_chat,base.group_user,1,1,1,1
-access_line_chat_status,access.line.chat.status,model_line_chat_status,base.group_user,1,1,1,1
-access_line_image_set,access.line.image.set,model_line_image_set,base.group_user,1,0,0,0
+access_line_chat_manager_group,access.line.chat,model_line_chat,line_chat.line_chat_manager_group,1,1,1,1
+access_line_chat_status_manager_group,access.line.chat.status,model_line_chat_status,line_chat.line_chat_manager_group,1,1,1,1
+access_line_image_set_manager_group,access.line.image.set,model_line_image_set,line_chat.line_chat_manager_group,1,0,0,0
+
+access_line_chat_agent_group,access.line.chat,model_line_chat,line_chat.line_chat_agent_group,1,0,0,0
+access_line_chat_status_agent_group,access.line.chat.status,model_line_chat_status,line_chat.line_chat_agent_group,1,0,0,0
+access_line_image_set_agent_group,access.line.image.set,model_line_image_set,line_chat.line_chat_agent_group,0,0,0,0
+

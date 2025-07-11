@@ -38,3 +38,15 @@ class LineChatStatus(models.Model):
                 if record.partner_id in chat.channel.sudo().channel_partner_ids:
                     count += 1
             record.serving_count = count
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        agent_group = self.env.ref('line_chat.line_chat_agent_group')
+        for record in records:
+            user = self.env['res.users'].search([('partner_id', '=', record.partner_id.id)], limit=1)
+            if user:
+                if agent_group not in user.groups_id:
+                    user.sudo().write({'groups_id': [(4, agent_group.id)]})
+
+        return records

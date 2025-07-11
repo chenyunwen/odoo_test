@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="module_category_line_chat" model="ir.module.category">
+            <field name="name">LINE 客服模組</field>
+            <field name="description">LINE 客服權限</field>
+        </record>
+
+        <record model="res.groups" id="line_chat_manager_group">
+            <field name="name">LINE 客服管理員</field>
+            <field name="category_id" ref="line_chat.module_category_line_chat"/>
+        </record>
+        <record model="res.groups" id="line_chat_agent_group">
+            <field name="name">LINE 客服人員</field>
+            <field name="category_id" ref="line_chat.module_category_line_chat"/>
+        </record>
+    </data>
+</odoo>

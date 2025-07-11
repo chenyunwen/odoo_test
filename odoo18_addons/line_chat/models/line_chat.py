@@ -204,6 +204,9 @@ class LineChat(models.Model):
             members_to_add = [Command.link(least_busy_agent.partner_id.id)]
         else:
             least_busy_agent = self.env.ref('base.user_admin')
+            self.env['line.chat.status'].create({
+                'partner_id': least_busy_agent.partner_id.id,
+            })
             members_to_add = [Command.link(least_busy_agent.partner_id.id)]
         least_busy_agent.serving_count += 1
         members_to_add.append(Command.link(fake_partner.id))
