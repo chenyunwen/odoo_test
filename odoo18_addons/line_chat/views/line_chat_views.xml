@@ -1,16 +1,36 @@
 <odoo>
+  <record id="line_chat_view_form" model="ir.ui.view">
+    <field name="name">line.chat.form</field>
+    <field name="model">line.chat</field>
+    <field name="arch" type="xml">
+      <form string="LINE 聯絡人">
+        <sheet>
+          <group>
+            <field name="partner_id"/>
+            <field name="channel"/>
+            <field name="agent_partner_ids"/>
+            <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+            <field name="name"/>
+            <!-- <field name="line_user_id"/> -->
+          </group>
+          
+        </sheet>
+      </form>
+    </field>
+  </record>
+  
   <record id="line_chat_view_list" model="ir.ui.view">
     <field name="name">line.chat.list</field>
     <field name="model">line.chat</field>
     <field name="arch" type="xml">
       <list string="已建立 LINE 對話的客戶">
       <!-- <group> -->
-        <field name="name"/>
-        <field name="line_user_id"/>
         <field name="partner_id"/>
         <field name="channel"/>
-        <!-- <field name="agent_partner_id"/> -->
         <field name="agent_partner_ids"/>
+        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+        <field name="name"/>
+        <!-- <field name="line_user_id"/> -->
       <!-- </group> -->
       </list>
     </field>

@@ -75,6 +75,7 @@ class LineChat(models.Model):
         compute="_get_agent_partner",
     )
     channel = fields.Many2one('discuss.channel', string='聊天室', readonly=True)
+    tag_ids = fields.Many2many('line.chat.tag', string="Tags")
 
     @api.depends("channel.channel_partner_ids")
     def _get_agent_partner(self):

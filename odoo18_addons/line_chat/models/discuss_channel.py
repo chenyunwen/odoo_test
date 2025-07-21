@@ -12,8 +12,8 @@ class Channel(models.Model):
         for channel in self:
             related_line_chats =  self.env['line.chat'].search([('channel', '=', channel.id)])
             if related_line_chats:
-              for pid in partner_ids:
-                  status = self.env['line.chat.status'].search([('partner_id', '=', pid)], limit=1)
-                  if status:
-                      status.serving_count += 1
+                for pid in partner_ids:
+                    status = self.env['line.chat.status'].search([('partner_id', '=', pid)], limit=1)
+                    if status:
+                        status.serving_count += 1
         return res
