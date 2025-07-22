@@ -10,7 +10,8 @@
                 <sheet>
                     <group>
                         <field name="partner_id"/>
-                        <field name="serving_count" readonly="1"/>
+                        <field name="group_role" readonly="1"/>
+                        <!-- <field name="serving_count" readonly="1"/> -->
                     </group>
                 </sheet>
             </form>
@@ -24,7 +25,8 @@
         <field name="arch" type="xml">
             <list string="客服狀態">
                 <field name="partner_id"/>
-                <field name="serving_count"/>
+                <field name="group_role" readonly="1"/>
+                <!-- <field name="serving_count"/> -->
             </list>
         </field>
     </record>
@@ -46,7 +48,7 @@
               groups="base.group_user"/> -->
 
     <menuitem id="line_chat_status_menu"
-              name="客服人員狀態"
+              name="客服人員名單"
               parent="line_chat_menu_root"
               action="line_chat_status_action"
               sequence="20"

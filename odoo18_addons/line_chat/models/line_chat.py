@@ -200,16 +200,22 @@ class LineChat(models.Model):
     
     def _create_new_line_chat_user(self, line_name, line_user_id):
         fake_partner = self.env['res.partner'].create({'name': f"Guest-{line_name}"})
-        least_busy_agent = self.env['line.chat.status'].search([], order='serving_count ASC', limit=1)
-        if least_busy_agent and least_busy_agent.partner_id:
-            members_to_add = [Command.link(least_busy_agent.partner_id.id)]
-        else:
-            least_busy_agent = self.env.ref('base.user_admin')
+        # customer_group = self.env.ref('line_chat.line_chat_customer_group')
+        # fake_partner.sudo().write({'groups_id': [(4, customer_group.id)]})
+
+        # least_busy_agent = self.env['line.chat.status'].search([], order='serving_count ASC', limit=1)
+        # if least_busy_agent and least_busy_agent.partner_id:
+        #     members_to_add = [Command.link(least_busy_agent.partner_id.id)]
+        # else:
+        least_busy_agent = self.env.ref('base.user_admin')
+        existing_status = self.env['line.chat.status'].search([('partner_id', '=', least_busy_agent.partner_id.id)], limit=1)
+        if not existing_status:
             self.env['line.chat.status'].create({
                 'partner_id': least_busy_agent.partner_id.id,
             })
-            members_to_add = [Command.link(least_busy_agent.partner_id.id)]
-        least_busy_agent.serving_count += 1
+        members_to_add = [Command.link(least_busy_agent.partner_id.id)]
+        
+        # least_busy_agent.serving_count += 1
         members_to_add.append(Command.link(fake_partner.id))
 
         # channel = self.env['discuss.channel'].create({

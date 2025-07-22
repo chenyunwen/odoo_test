@@ -2,16 +2,20 @@
 <odoo>
     <data>
         <record id="module_category_line_chat" model="ir.module.category">
-            <field name="name">LINE 客服模組</field>
-            <field name="description">LINE 客服權限</field>
+            <field name="name">LINE 業務權限</field>
+            <field name="description">LINE 業務相關權限</field>
         </record>
 
         <record model="res.groups" id="line_chat_manager_group">
-            <field name="name">LINE 客服管理員</field>
+            <field name="name">LINE 業務管理員</field>
             <field name="category_id" ref="line_chat.module_category_line_chat"/>
         </record>
         <record model="res.groups" id="line_chat_agent_group">
-            <field name="name">LINE 客服人員</field>
+            <field name="name">LINE 業務</field>
+            <field name="category_id" ref="line_chat.module_category_line_chat"/>
+        </record>
+        <record model="res.groups" id="line_chat_customer_group">
+            <field name="name">LINE 客戶</field>
             <field name="category_id" ref="line_chat.module_category_line_chat"/>
         </record>
     </data>

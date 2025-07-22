@@ -1,8 +1,8 @@
 {
-    'name': 'Line Chat',
+    'name': 'Line 客戶管理',
     'version': '1.0',
     'category': 'Sales/Line',
-    'summary': '將 Odoo 中的客服訊息與 LINE 官方帳號串接，並支援圖片與音訊回覆。',
+    'summary': '業務可在 Odoo 中與 LINE 上的客戶聯繫，支援文字、圖片與音訊回覆。',
     'depends': ['base', 'mail'], # ,'sale'
     'data': [
       'security/groups.xml',
