@@ -30,6 +30,13 @@ class SaleOrder(models.Model):
                 if self.env.user.partner_id not in channel.channel_partner_ids:
                     channel.add_members([self.env.user.partner_id.id])
             self.line_chat._post_odoo_text_message(self.line_chat.channel, f"已建立報價:\n {message}", self.env.user.partner_id)
+            self.state = 'sent'
+
+        # report = self.env.ref('sale.action_report_saleorder')
+        # pdf_content, _ = report._render_qweb_pdf(self.id)
+        
+        # print(report)
+
         return  {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -39,4 +46,17 @@ class SaleOrder(models.Model):
                 'message': _("已成功透過 LINE 發送訂單資訊"),
                 'sticky': False,
             },
+        }
+    
+    def open_confirm_wizard(self):
+        return {
+            'name': '確認發送報價單？',
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order.confirm.send.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_message': '你確定要發送這張報價單嗎？',
+                'active_id': self.id,
+            }
         }

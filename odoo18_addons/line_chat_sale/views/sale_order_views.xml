@@ -16,8 +16,8 @@
     <field name="inherit_id" ref="sale.view_order_form"/>
     <field name="arch" type="xml">
       <xpath expr="//field[@name='authorized_transaction_ids']" position="after">
-        <button name="action_quotation_send_line" id="send_by_line" string="透過 LINE 發送訂單資訊" class="btn btn-success" type="object" invisible="line_chat == False" data-hotkey=""/>
-        <button name="action_quotation_send_line" id="send_by_line" string="尚無此聯絡人 LINE 帳號" class="btn disabled" type="object" invisible="not line_chat == False" data-hotkey=""/>
+        <button name="open_confirm_wizard" id="send_by_line" string="透過 LINE 發送訂單資訊" class="btn btn-success" type="object" invisible="line_chat == False" data-hotkey=""/>
+        <button name="action_quotation_send_line" id="send_by_line_disabled" string="尚無此聯絡人 LINE 帳號" class="btn disabled" type="object" invisible="not line_chat == False" data-hotkey=""/>
       </xpath>
     </field>
   </record>
