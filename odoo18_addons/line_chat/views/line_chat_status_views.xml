@@ -11,6 +11,7 @@
                     <group>
                         <field name="partner_id"/>
                         <field name="group_role" readonly="1"/>
+                        <field name="referral_code"/>
                         <!-- <field name="serving_count" readonly="1"/> -->
                     </group>
                 </sheet>
@@ -26,6 +27,7 @@
             <list string="客服狀態">
                 <field name="partner_id"/>
                 <field name="group_role" readonly="1"/>
+                <field name="referral_code"/>
                 <!-- <field name="serving_count"/> -->
             </list>
         </field>

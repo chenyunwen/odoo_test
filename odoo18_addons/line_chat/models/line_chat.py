@@ -123,6 +123,11 @@ class LineChat(models.Model):
                 if not existing_user:
                     print("new user")
                     existing_user = self._create_new_line_chat_user(line_name, line_user_id)
+                    if message_type == 'text' and event['message']['text'].lower().startswith('推薦碼：'):
+                        code = event['message']['text'].split('：')[-1].strip()
+                        ref_user = self.env['line.chat.status'].search([('referral_code', '=', code)], limit=1)
+                        if ref_user and ref_user.partner_id not in existing_user.channel.channel_partner_ids:
+                            existing_user.channel.add_members([ref_user.partner_id.id])
 
                 curr_partner_id = existing_user.partner_id
                 curr_agent_partner_ids = existing_user.agent_partner_ids
@@ -448,7 +453,7 @@ class LineChat(models.Model):
         #     'author_id': partner_id.id
         # })
 
-    def _post_odoo_image_set_message(self, channel, image_bytes, content_type, filename, image_set_id, is_lest_one, partner_id):
+    def _post_odoo_image_set_message(self, channel, image_bytes, content_type, filename, image_set_id, is_last_one, partner_id):
         attachment = self.env['ir.attachment'].create({
             'name': f'{filename}.jpg',
             'datas': base64.b64encode(image_bytes).decode('utf-8'),
@@ -474,7 +479,7 @@ class LineChat(models.Model):
             existing_image_set.message_id.write({'attachment_ids': [(4, attachment.id)]})
             # count = len(existing_image_set.message_id.attachment_ids)
 
-            if(is_lest_one):
+            if(is_last_one):
                 existing_image_set.unlink()
         
     def _post_odoo_audio_message(self, channel, audio_bytes, content_type, filename, partner_id):
