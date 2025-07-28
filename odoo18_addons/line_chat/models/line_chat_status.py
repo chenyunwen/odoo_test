@@ -48,7 +48,6 @@ class LineChatStatus(models.Model):
             value = int(partner_id) + OFFSET
             base36 = record.base36_encode(value)
             record.referral_code = f"{PREFIX}-{base36.upper()}"
-            self.decode_referral_code(f"{PREFIX}-{base36.upper()}")
 
     @staticmethod
     def base36_encode(number: int) -> str:
@@ -59,18 +58,6 @@ class LineChatStatus(models.Model):
             number, i = divmod(number, 36)
             base36 = alphabet[i] + base36
         return base36 or "0"
-
-    def decode_referral_code(self, code: str) -> int:
-        """解析推薦碼，取得原始 partner_id"""
-        if not code.startswith(f"{PREFIX}-"):
-            return None
-        base36 = code.split("-")[1].lower()
-        print('base36~~~', base36)
-        try:
-            number = int(base36, 36)
-            return number - OFFSET
-        except ValueError:
-            return None
         
     # @api.depends('partner_id')
     # def _get_serving_count(self):

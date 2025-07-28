@@ -15,6 +15,7 @@ import time
 # import hashlib
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
+import requests
 # from mutagen.wave import WAVE
 
 # from dotenv import load_dotenv
@@ -64,6 +65,7 @@ class LineChat(models.Model):
 
     name = fields.Char(string='客戶 LINE 名稱', readonly=True, copy=False)
     line_user_id = fields.Char(string='Line ID', readonly=True, copy=False)
+    line_picture_url = fields.Char(string="LINE 頭貼網址", readonly=True)
     partner_id = fields.Many2one(
         'res.partner', string='聯絡人名稱', index=True, readonly=True, copy=False, 
     )
@@ -114,6 +116,7 @@ class LineChat(models.Model):
                 line_user_id = event['source']['userId']
                 profile = line_bot_api.get_profile(line_user_id)
                 line_name = profile.display_name
+                line_image_url = profile.picture_url
 
                 timestamp = event['timestamp'] / 1000
                 dt = datetime.datetime.fromtimestamp(timestamp)
@@ -122,7 +125,7 @@ class LineChat(models.Model):
                 existing_user = self.env['line.chat'].search([('line_user_id', '=', line_user_id)], limit=1)
                 if not existing_user:
                     print("new user")
-                    existing_user = self._create_new_line_chat_user(line_name, line_user_id)
+                    existing_user = self._create_new_line_chat_user(line_name, line_user_id, line_image_url)
                     if message_type == 'text' and event['message']['text'].lower().startswith('推薦碼：'):
                         code = event['message']['text'].split('：')[-1].strip()
                         ref_user = self.env['line.chat.status'].search([('referral_code', '=', code)], limit=1)
@@ -132,6 +135,7 @@ class LineChat(models.Model):
                 curr_partner_id = existing_user.partner_id
                 curr_agent_partner_ids = existing_user.agent_partner_ids
                 curr_channel = existing_user.channel
+                self._update_user_line_image_url(existing_user, line_image_url)
                     
             except Exception as e:
                 raise exceptions.ValidationError(_("創建資料時錯誤: %s") % e)
@@ -142,8 +146,8 @@ class LineChat(models.Model):
                     reply = _("已收到您說：\n%s\n請稍等客服回應") % text
                     
                     self._post_odoo_text_message(curr_channel, text, curr_partner_id)
-                    self._reply_line_message(line_bot_api, reply_token, reply)
-                    self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_ids[0])
+                    # self._reply_line_message(line_bot_api, reply_token, reply)
+                    # self._post_odoo_text_message(curr_channel, reply, curr_agent_partner_ids[0])
 
                     #   $$$
                     # self._send_line_text_message(line_bot_api, reply)
@@ -203,8 +207,17 @@ class LineChat(models.Model):
             raise Exception("Exceeded max retries to get message content")
         
     
-    def _create_new_line_chat_user(self, line_name, line_user_id):
-        fake_partner = self.env['res.partner'].create({'name': f"Guest-{line_name}"})
+    def _create_new_line_chat_user(self, line_name, line_user_id, picture_url):
+        image_data = False
+
+        if picture_url:
+            try:
+                response = requests.get(picture_url)
+                if response.status_code == 200:
+                    image_data = base64.b64encode(response.content)
+            except Exception as e:
+                raise exceptions.ValidationError(f"無法下載 LINE 頭像：{e}")
+        fake_partner = self.env['res.partner'].create({'name': f"Guest-{line_name}", 'image_1920': image_data,})
         # customer_group = self.env.ref('line_chat.line_chat_customer_group')
         # fake_partner.sudo().write({'groups_id': [(4, customer_group.id)]})
 
@@ -212,6 +225,8 @@ class LineChat(models.Model):
         # if least_busy_agent and least_busy_agent.partner_id:
         #     members_to_add = [Command.link(least_busy_agent.partner_id.id)]
         # else:
+        
+
         least_busy_agent = self.env.ref('base.user_admin')
         existing_status = self.env['line.chat.status'].search([('partner_id', '=', least_busy_agent.partner_id.id)], limit=1)
         if not existing_status:
@@ -239,6 +254,7 @@ class LineChat(models.Model):
             'name': f"Guest-{line_name}（LINE）",
             'channel_type': 'group',
             'channel_partner_ids': members_to_add,
+            'image_1920': image_data
         })
         # channel = self.env['discuss.channel'].create_group(partners_to=members_to_add)
         # ------
@@ -246,11 +262,19 @@ class LineChat(models.Model):
         return self.env['line.chat'].create({
             'name': line_name,
             'line_user_id': line_user_id,
+            'line_picture_url': picture_url,
             'partner_id': fake_partner.id,
             'channel': channel.id,
             'agent_partner_ids':  [(4, least_busy_agent.partner_id.id)]
         })
     
+    def _update_user_line_image_url(self, existing_user, picture_url):
+        if existing_user.line_picture_url != picture_url:
+            response = requests.get(picture_url)
+            if response.status_code == 200:
+                existing_user.partner_id.image_1920 = base64.b64encode(response.content)
+                existing_user.channel.image_128 = base64.b64encode(response.content)
+                existing_user.line_picture_url = picture_url
 
     def _reply_line_message(self, line_bot_api, reply_token, text):
         try:
