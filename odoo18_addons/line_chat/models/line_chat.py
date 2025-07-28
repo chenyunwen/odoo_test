@@ -170,7 +170,12 @@ class LineChat(models.Model):
                     message_id = event['message']['id']
                     message_content, content_type = self._download_line_media_file_with_retry(message_id, access_token)
                     self._post_odoo_audio_message(curr_channel, message_content, content_type, filename, curr_partner_id)
-                        
+
+                elif message_type == 'sticker':
+                    headers = {"Authorization": f"Bearer {access_token}"}
+                    stickerId = event['message']['stickerId']
+                    self._post_odoo_sticker_message(headers, stickerId, curr_channel, filename, curr_partner_id)
+                    
                 else:
                     text = _("非文字訊息")
                     reply = _("暫時無法解析 %s 類別的訊息") % message_type
@@ -431,6 +436,34 @@ class LineChat(models.Model):
 
         except Exception as e:
             raise exceptions.ValidationError(_("LINE 傳送語音失敗： %s") % e)
+
+    def _post_odoo_sticker_message(self, headers, stickerId, channel, filename, partner_id, retries=3, delay=2):
+        with httpx.Client() as client:
+            for attempt in range(retries):
+                response = client.get(f'https://stickershop.line-scdn.net/stickershop/v1/sticker/{stickerId}/android/sticker.png', headers=headers)
+                if response.status_code == 200:
+                    message_content, content_type = response.content, response.headers.get('content-type', '')
+                    attachment = self.env['ir.attachment'].create({
+                        'name': f'{filename}.jpg',
+                        'datas': base64.b64encode(message_content).decode('utf-8'),
+                        'res_model': 'discuss.channel',
+                        'res_id': channel.id,
+                        'mimetype': content_type,
+                    })
+                    msg = channel.message_post(
+                        body='(sticker)',
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_comment',
+                        author_id=partner_id.id
+                    )
+                    msg.write({'attachment_ids': [(4, attachment.id)]})
+                    return
+                elif response.status_code == 202:
+                    print(f"Content not ready, retry {attempt + 1}/{retries} after {delay} seconds")
+                    time.sleep(delay)
+                else:
+                    raise Exception(f"Failed to get message content: {response.status_code}")
+            raise Exception("Exceeded max retries to get message content")
 
     def _post_odoo_text_message(self, channel, text, partner_id):
         try:
