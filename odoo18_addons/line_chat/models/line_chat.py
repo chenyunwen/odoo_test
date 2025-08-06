@@ -259,7 +259,7 @@ class LineChat(models.Model):
             'name': f"Guest-{line_name}（LINE）",
             'channel_type': 'group',
             'channel_partner_ids': members_to_add,
-            'image_1920': image_data
+            'image_128': image_data
         })
         # channel = self.env['discuss.channel'].create_group(partners_to=members_to_add)
         # ------
